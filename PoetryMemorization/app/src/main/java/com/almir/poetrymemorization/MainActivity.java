@@ -14,6 +14,7 @@ import android.speech.SpeechRecognizer;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,8 +25,94 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-
 public class MainActivity extends ActionBarActivity {
+
+    private static int listenerCounter = 0;
+
+    private class MatchingPoem {
+        private final SpeechRecognizer speechRecognizer;
+        private String[] lines;
+        private int currentLine;
+        private int numMatchedLines;
+
+        public MatchingPoem(SpeechRecognizer speechRecognizer, String poem) {
+            this.speechRecognizer = speechRecognizer;
+            this.lines = poem.split("\\n+");
+            resetMatch();
+        }
+
+        public void resetMatch() {
+            currentLine = 0;
+            numMatchedLines = 0;
+        }
+
+        public boolean currentLineMatches(List<String> matches) {
+            for (String match : matches) {
+                if (twoStringsAreSimilar(match, lines[currentLine])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void markLineSuccess() {
+            // TODO: show in UI
+
+            mTvPoem.setText(mTvPoem.getText() + "\n" + "+ " + lines[currentLine]);
+
+            numMatchedLines++;
+            checkIfContinueMatching();
+        }
+
+        public void markLineFail() {
+            // TODO: show in UI
+
+            mTvPoem.setText(mTvPoem.getText() + "\n" + "- " + lines[currentLine]);
+
+            pronounceLine(lines[currentLine]);
+            checkIfContinueMatching();
+        }
+
+        public void speechTimeout() {
+
+        }
+
+        public void checkIfContinueMatching() {
+            currentLine++;
+            if (currentLine < lines.length) {
+                createListenerForNewLine(speechRecognizer);
+            } else {
+                endMatching();
+            }
+        }
+
+        public void endMatching() {
+            // TODO: implement
+
+            mTvPoem.setText(mTvPoem.getText() + "\n" + numMatchedLines + "/" + lines.length);
+        }
+
+        private void pronounceLine(String line) {
+            // TODO: implement
+        }
+
+        private boolean twoStringsAreSimilar(String guess, String reference) {
+            double score = LevenshteinDistance.computeLevenshteinDistance(guess, reference)
+                    / (guess.length() + reference.length() / 2.);
+
+            Log.d("REFERENCE", reference);
+            Log.d("GUESS", guess);
+            Log.d("LEVEN_SENTENCES_NORM", Double.toString(score));
+
+            return score < 0.45;
+        }
+
+        public void startMatching() {
+            createListenerForNewLine(speechRecognizer);
+        }
+    }
+
+    MatchingPoem matchingPoem;
 
     public static final int LISTENING_TIMEOUT = 3000;
 
@@ -60,9 +147,22 @@ public class MainActivity extends ActionBarActivity {
         ComponentName serviceComponent = getServiceComponent();
         if (serviceComponent != null) {
             mSr = SpeechRecognizer.createSpeechRecognizer(this, serviceComponent);
-            if (mSr != null) {
-                prepareMemorization(mSr);
-            }
+            matchingPoem = new MatchingPoem(mSr, mTvPoem.getText().toString());
+
+            mButtonShowPoem.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mTvPoem.setText(R.string.poem);
+                }
+            });
+            mButtonStart.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mTvPoem.setText("");
+
+                    matchingPoem.startMatching();
+                }
+            });
         }
     }
 
@@ -98,12 +198,11 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private Intent createRecognizerIntent(String verse) {
+    private Intent createRecognizerIntent() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getApplicationContext().getPackageName());
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, verse);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().getLanguage());
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
         return intent;
@@ -121,29 +220,8 @@ public class MainActivity extends ActionBarActivity {
         return new ComponentName(pkg, cls);
     }
 
-    private void prepareMemorization(final SpeechRecognizer sr) {
-        mButtonShowPoem.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mTvPoem.setText(R.string.poem);
-            }
-        });
-        mButtonStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mTvPoem.setText("");
-
-                listenVerse(sr, getString(R.string.poem).split("\n")[0]);
-            }
-        });
-    }
-
-    private void listenVerse(SpeechRecognizer sr, String verse) {
-        startListening(sr, verse);
-    }
-
-    private void startListening(final SpeechRecognizer sr, String phrase) {
-        Intent intentRecognizer = createRecognizerIntent(phrase);
+    private void createListenerForNewLine(final SpeechRecognizer sr) {
+        Intent intentRecognizer = createRecognizerIntent();
 
         final Runnable stopListening = new Runnable() {
             @Override
@@ -154,6 +232,7 @@ public class MainActivity extends ActionBarActivity {
         final Handler handler = new Handler();
 
         sr.setRecognitionListener(new RecognitionListener() {
+
             @Override
             public void onReadyForSpeech(Bundle params) {
                 handler.postDelayed(stopListening, LISTENING_TIMEOUT);
@@ -184,7 +263,7 @@ public class MainActivity extends ActionBarActivity {
                 handler.removeCallbacks(stopListening);
                 switch (error) {
                     case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
-                        listenVerse(sr, "");
+                        matchingPoem.speechTimeout();
                         break;
                     default:
                         break;
@@ -195,20 +274,16 @@ public class MainActivity extends ActionBarActivity {
             public void onResults(Bundle results) {
                 handler.removeCallbacks(stopListening);
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                if (!matches.isEmpty()) {
-                    String result = matches.iterator().next();
-                    //show result
-                    mTvPoem.setText(mTvPoem.getText()+"\n"+result);
-                    listenVerse(sr, "");
+                if (matchingPoem.currentLineMatches(matches)) {
+                    matchingPoem.markLineSuccess();
+                } else {
+                    matchingPoem.markLineFail();
                 }
             }
 
             @Override
             public void onPartialResults(Bundle partialResults) {
-                String[] results = partialResults.getStringArray("com.google.android.voicesearch.UNSUPPORTED_PARTIAL_RESULTS");
-                if (results != null) {
-                    //show results
-                }
+
             }
 
             @Override
