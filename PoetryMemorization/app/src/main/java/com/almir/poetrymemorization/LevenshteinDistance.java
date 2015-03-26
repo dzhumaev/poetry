@@ -48,11 +48,11 @@ public class LevenshteinDistance {
 
         for (int i = reference.length, j = guess.length; i > 0 || j > 0; ) {
             if (i > 0 && T[i][j] == T[i - 1][j] + 1) {
-                isUnrecognizedWord[--i] = false;
+                isUnrecognizedWord[--i] = true;
             } else if (j > 0 && T[i][j] == T[i][j - 1] + 1) {
                 --j;
             } else if (i > 0 && j > 0 && T[i][j] == T[i - 1][j - 1]) {
-                isUnrecognizedWord[--i] = true;
+                isUnrecognizedWord[--i] = false;
                 --j;
             }
         }

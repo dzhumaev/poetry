@@ -53,14 +53,13 @@ public class MainActivity extends ActionBarActivity {
             double minScore = 2;
             for (String guess : guesses) {
                 double currentScore = similarityScore(guess, lines[currentLine]);
-                if (currentLine < 0.45) {
-                    if (currentScore < minScore) {
-                        minScore = currentScore;
-                        lastGuess = guess;
-                    }
+                if (currentScore < minScore) {
+                    minScore = currentScore;
+                    lastGuess = guess;
                 }
             }
-            return minScore < 2;
+            Log.i("MIN_SCORE", Double.toString(minScore));
+            return minScore < 0.45;
         }
 
         String cleanWord(String dirtyWord) {
@@ -87,7 +86,10 @@ public class MainActivity extends ActionBarActivity {
                 }
             }
 
-            return Joiner.on(" ").join(referenceWords);
+            String referenceWithMarkup = Joiner.on(" ").join(referenceWords);
+            Log.i("REF_W_MARKUP", referenceWithMarkup);
+
+            return referenceWithMarkup;
         }
 
         public void markLineSuccess() {
@@ -96,7 +98,7 @@ public class MainActivity extends ActionBarActivity {
             String referenceWithMarkup = attachConfidenceMarkupToReference(
                     lines[currentLine], lastGuess);
 
-            mTvPoem.setText(mTvPoem.getText() + "\n" + "+ " + lines[currentLine]);
+            mTvPoem.setText(mTvPoem.getText() + "\n" + "+ " + referenceWithMarkup);
 
             numMatchedLines++;
             checkIfContinueMatching();
@@ -146,6 +148,7 @@ public class MainActivity extends ActionBarActivity {
         }
 
         public void startMatching() {
+            resetMatch();
             createListenerForNewLine(speechRecognizer);
         }
     }
