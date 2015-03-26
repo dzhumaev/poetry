@@ -213,7 +213,6 @@ public class MainActivity extends ActionBarActivity {
     private Button mButtonReset;
     private Button mButtonStart;
     private boolean isPressed = true;
-    private String[] poem;
     private int score = 0;
 
     @Override
@@ -228,7 +227,6 @@ public class MainActivity extends ActionBarActivity {
         mTvPoem.setText(R.string.poem);
         mTvScore = (TextView) findViewById(R.id.score);
         mTvScore.setText(""+score);
-        poem = getString(R.string.poem).split("\n");
         mButtonReset = (Button) findViewById(R.id.button_reset);
         mButtonStart = (Button) findViewById(R.id.button_start);
     }

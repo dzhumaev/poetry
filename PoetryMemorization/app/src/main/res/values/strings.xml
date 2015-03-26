@@ -1,35 +1,19 @@
 <resources>
     <string name="app_name">Poetry Memorization</string>
-    <string name="poem">The day is past, the sun is set,\nAnd the white stars are in the sky;\nWhile the long grass with dew is wet,\nAnd through the air the bats now fly.\n\nThe lambs have now lain down to sleep,\nThe birds have long since sought their nests;\nThe air is still; and dark, and deep\nOn the hill side the old wood rests.\n\nYet of the dark I have no fear,\nBut feel as safe as when \'tis light;\nFor I know God is with me there,\nAnd He will guard me through the night.\n\nFor God is by me when I pray,\nAnd when I close mine eyes to sleep,\nI know that He will with me stay,\nAnd will all night watch by me keep.\n\nFor He who rules the stars and sea,\nWho makes the grass and trees to grow.\nWill look on a poor child like me,\nWhen on my knees I to Him bow.\n\nHe holds all things in His right hand,\nThe rich, the poor, the great, the small;\nWhen we sleep, or sit, or stand,\nHe is with us, for He loves us all.</string>
-    <string name="poem2">The day is past, the sun is set,
-And the white stars are in the sky;
-While the long grass with dew is wet,
-And through the air the bats now fly.
-
-The lambs have now lain down to sleep,
-The birds have long since sought their nests;
-The air is still; and dark, and deep
-On the hill side the old wood rests.
-
-Yet of the dark I have no fear,
-But feel as safe as when \'tis light;
-For I know God is with me there,
-And He will guard me through the night.
-
-For God is by me when I pray,
-And when I close mine eyes to sleep,
-I know that He will with me stay,
-And will all night watch by me keep.
-
-For He who rules the stars and sea,
-Who makes the grass and trees to grow.
-Will look on a poor child like me,
-When on my knees I to Him bow.
-
-He holds all things in His right hand,
-The rich, the poor, the great, the small;
-When we sleep, or sit, or stand,
-He is with us, for He loves us all.</string>
+    <string name="poem">Two households, both alike in dignity,\n
+In fair Verona, where we lay our scene,\n
+From ancient grudge break to new mutiny,\n
+Where civil blood makes civil hands unclean.\n
+From forth the fatal loins of these two foes\n
+A pair of star-cross\'d lovers take their life;\n
+Whose misadventured piteous overthrows\n
+Do with their death bury their parents\' strife.\n
+The fearful passage of their death-mark\'d love,\n
+And the continuance of their parents\' rage,\n
+Which, but their children\'s end, nought could remove,\n
+Is now the two hours\' traffic of our stage;\n
+The which if you with patient ears attend,\n
+What here shall miss, our toil shall strive to mend.</string>
     <string name="action_settings">Settings</string>
     <string name="button_reset">Start Over</string>
     <string name="button_start">Check Poem</string>
