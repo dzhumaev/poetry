@@ -178,6 +178,7 @@ public class MainActivity extends ActionBarActivity {
 
         public void pauseMatching() {
             isRunning = false;
+            speechRecognizer.cancel();
         }
 
         public void continueMatching() {
