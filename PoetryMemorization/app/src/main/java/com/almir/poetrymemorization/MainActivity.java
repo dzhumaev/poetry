@@ -25,17 +25,17 @@ import android.widget.TextView;
 
 import com.google.common.base.Joiner;
 
+import org.apache.commons.codec.language.Metaphone;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends ActionBarActivity {
 
-    private static int listenerCounter = 0;
-
     private class MatchingPoem {
         private final SpeechRecognizer speechRecognizer;
-        private String[] lines;
+        private String[] lines, linesWithMarkup;
         private String lastGuess;
         private int currentLine;
         private int numMatchedLines;
@@ -53,6 +53,7 @@ public class MainActivity extends ActionBarActivity {
             currentLine = 0;
             numMatchedLines = 0;
             numGuessedLines = 0;
+            linesWithMarkup = new String[lines.length];
             isLineGuessed = new boolean[lines.length];
         }
 
@@ -74,7 +75,19 @@ public class MainActivity extends ActionBarActivity {
         }
 
         String markUnrecognized(String word) {
-            return "-" + word + "-";
+            return "<font color='#9F000F'>" + word + "</font>";
+        }
+
+        String markRecognized(String word) {
+            return "<font color='#008000'>" + word + "</font>";
+        }
+
+        private String[] wordsToMetaphone(String[] words) {
+            String[] result = new String[words.length];
+            for (int i = 0; i < words.length; ++i) {
+                result[i] = new Metaphone().metaphone(words[i]);
+            }
+            return result;
         }
 
         private String attachConfidenceMarkupToReference(String reference, String guess) {
@@ -85,11 +98,13 @@ public class MainActivity extends ActionBarActivity {
                 cleanedReferenceWords[i] = cleanWord(referenceWords[i]);
             }
             boolean[] unrecognizedWords = LevenshteinDistance.showUnrecognizedWords(
-                    cleanedReferenceWords, guessWords);
+                    wordsToMetaphone(cleanedReferenceWords), wordsToMetaphone(guessWords));
 
             for (int i = 0; i < referenceWords.length; ++i) {
                 if (unrecognizedWords[i]) {
                     referenceWords[i] = markUnrecognized(referenceWords[i]);
+                } else {
+                    referenceWords[i] = markRecognized(referenceWords[i]);
                 }
             }
 
@@ -104,10 +119,11 @@ public class MainActivity extends ActionBarActivity {
 
             numGuessedLines++;
 
-           // String referenceWithMarkup = attachConfidenceMarkupToReference(
-           //         lines[currentLine], lastGuess);
+           String referenceWithMarkup = attachConfidenceMarkupToReference(
+                    lines[currentLine], lastGuess);
 
-//            mTvPoem.setText(mTvPoem.getText() + "\n" + "+ " + referenceWithMarkup);
+            linesWithMarkup[currentLine] = referenceWithMarkup;
+
             isLineGuessed[currentLine] = true;
             checkIfContinueMatching();
         }
@@ -117,7 +133,6 @@ public class MainActivity extends ActionBarActivity {
 
             mTvPoem.setText(mTvPoem.getText() + "\n" + "- " + lines[currentLine]);
 
-//            pronounceLine(lines[currentLine]);
             isLineGuessed[currentLine] = false;
             checkIfContinueMatching();
         }
@@ -173,12 +188,15 @@ public class MainActivity extends ActionBarActivity {
         private String getHtmlForGuessedPart() {
             String html = "";
             for (int i = 0; i < currentLine; i++) {
+                String line = (linesWithMarkup[i] == null) ? lines[i] : linesWithMarkup[i];
+                Log.d("LINE_TO_PRINT", line);
                 if (isLineGuessed[i]) {
-                    html = html + "<br><font color=\"#347C17\">" + lines[i] + "</font></br>\n";
+                    html = html + "<br>" + line + "</br>\n";
                 } else {
-                    html = html + "<br><font color=\"#9F000F\">" + lines[i] + "</font></br>\n";
+                    html = html + "<br><font color=\"#9F000F\">" + line + "</font></br>\n";
                 }
             }
+            Log.d("HTML", html);
             return html;
         }
 
@@ -201,7 +219,7 @@ public class MainActivity extends ActionBarActivity {
 
     MatchingPoem matchingPoem;
 
-    public static final int LISTENING_TIMEOUT = 3000;
+    public static final int LISTENING_TIMEOUT = 4000;
 
     private Resources mRes;
     private SharedPreferences mPrefs;
