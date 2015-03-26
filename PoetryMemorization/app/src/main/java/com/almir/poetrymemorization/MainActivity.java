@@ -21,6 +21,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.common.base.Joiner;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +34,7 @@ public class MainActivity extends ActionBarActivity {
     private class MatchingPoem {
         private final SpeechRecognizer speechRecognizer;
         private String[] lines;
+        private String lastGuess;
         private int currentLine;
         private int numMatchedLines;
 
@@ -46,17 +49,52 @@ public class MainActivity extends ActionBarActivity {
             numMatchedLines = 0;
         }
 
-        public boolean currentLineMatches(List<String> matches) {
-            for (String match : matches) {
-                if (twoStringsAreSimilar(match, lines[currentLine])) {
-                    return true;
+        public boolean currentLineMatches(List<String> guesses) {
+            double minScore = 2;
+            for (String guess : guesses) {
+                double currentScore = similarityScore(guess, lines[currentLine]);
+                if (currentLine < 0.45) {
+                    if (currentScore < minScore) {
+                        minScore = currentScore;
+                        lastGuess = guess;
+                    }
                 }
             }
-            return false;
+            return minScore < 2;
+        }
+
+        String cleanWord(String dirtyWord) {
+            return dirtyWord.replaceAll("[^a-zA-Z']", "").toLowerCase();
+        }
+
+        String markUnrecognized(String word) {
+            return "-" + word + "-";
+        }
+
+        private String attachConfidenceMarkupToReference(String reference, String guess) {
+            String[] referenceWords = reference.split("\\s+");
+            String[] guessWords = guess.split("\\s+");
+            String[] cleanedReferenceWords = new String[referenceWords.length];
+            for (int i = 0; i < referenceWords.length; ++i) {
+                cleanedReferenceWords[i] = cleanWord(referenceWords[i]);
+            }
+            boolean[] unrecognizedWords = LevenshteinDistance.showUnrecognizedWords(
+                    cleanedReferenceWords, guessWords);
+
+            for (int i = 0; i < referenceWords.length; ++i) {
+                if (unrecognizedWords[i]) {
+                    referenceWords[i] = markUnrecognized(referenceWords[i]);
+                }
+            }
+
+            return Joiner.on(" ").join(referenceWords);
         }
 
         public void markLineSuccess() {
             // TODO: show in UI
+
+            String referenceWithMarkup = attachConfidenceMarkupToReference(
+                    lines[currentLine], lastGuess);
 
             mTvPoem.setText(mTvPoem.getText() + "\n" + "+ " + lines[currentLine]);
 
@@ -96,7 +134,7 @@ public class MainActivity extends ActionBarActivity {
             // TODO: implement
         }
 
-        private boolean twoStringsAreSimilar(String guess, String reference) {
+        private double similarityScore(String guess, String reference) {
             double score = LevenshteinDistance.computeLevenshteinDistance(guess, reference)
                     / (guess.length() + reference.length() / 2.);
 
@@ -104,7 +142,7 @@ public class MainActivity extends ActionBarActivity {
             Log.d("GUESS", guess);
             Log.d("LEVEN_SENTENCES_NORM", Double.toString(score));
 
-            return score < 0.45;
+            return score;
         }
 
         public void startMatching() {
