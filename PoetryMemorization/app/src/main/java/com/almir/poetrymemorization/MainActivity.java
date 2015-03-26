@@ -13,6 +13,8 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.Spanned;
 import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,8 +37,14 @@ public class MainActivity extends ActionBarActivity {
     private SpeechRecognizer mSr;
 
     private TextView mTvPoem;
-    private Button mButtonShowPoem;
+    private TextView mTvScore;
+    private Button mButtonReset;
     private Button mButtonStart;
+    private boolean isPressed = true;
+    private String[] poem;
+    private int score = 0;
+    private int[] scores;
+    private int verseCounter = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -48,7 +56,11 @@ public class MainActivity extends ActionBarActivity {
         mTvPoem = (TextView) findViewById(R.id.text_poem);
         mTvPoem.setMovementMethod(new ScrollingMovementMethod());
         mTvPoem.setText(R.string.poem);
-        mButtonShowPoem = (Button) findViewById(R.id.button_show);
+        mTvScore = (TextView) findViewById(R.id.score);
+        mTvScore.setText(""+score);
+        poem = getString(R.string.poem).split("\n");
+        scores = new int[poem.length];
+        mButtonReset = (Button) findViewById(R.id.button_reset);
         mButtonStart = (Button) findViewById(R.id.button_start);
 
     }
@@ -122,18 +134,33 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void prepareMemorization(final SpeechRecognizer sr) {
-        mButtonShowPoem.setOnClickListener(new View.OnClickListener() {
+        mButtonReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mTvPoem.setText(R.string.poem);
+                score = 0;
+                mTvScore.setText(""+score);
+                scores = new int[poem.length];
+                verseCounter = 0;
+                mTvPoem.setText(generateHtml(poem.length));
+                isPressed = true;
+                mButtonStart.setText(R.string.button_start);
             }
         });
         mButtonStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mTvPoem.setText("");
+                if (isPressed) {
+                    isPressed = false;
+                    mButtonStart.setText(R.string.button_show);
+                    //show current
+                    mTvPoem.setText(generateHtml(verseCounter));
 
-                listenVerse(sr, getString(R.string.poem).split("\n")[0]);
+                    listenVerse(sr, poem[verseCounter]);
+                } else {
+                    isPressed = true;
+                    mButtonStart.setText(R.string.button_start);
+                    mTvPoem.setText(generateHtml(poem.length));
+                }
             }
         });
     }
@@ -184,7 +211,7 @@ public class MainActivity extends ActionBarActivity {
                 handler.removeCallbacks(stopListening);
                 switch (error) {
                     case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
-                        listenVerse(sr, "");
+                        listenVerse(sr, poem[verseCounter]);
                         break;
                     default:
                         break;
@@ -197,9 +224,16 @@ public class MainActivity extends ActionBarActivity {
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (!matches.isEmpty()) {
                     String result = matches.iterator().next();
+                    //change score if correct
+                    score++;
+                    scores[verseCounter] = 1; //or -1 if wrong
+                    mTvScore.setText(""+score);
                     //show result
-                    mTvPoem.setText(mTvPoem.getText()+"\n"+result);
-                    listenVerse(sr, "");
+                    verseCounter++;
+                    while (poem[verseCounter] == "") verseCounter++;
+                    mTvPoem.setText(generateHtml(verseCounter));
+
+                    listenVerse(sr, poem[verseCounter]);
                 }
             }
 
@@ -218,5 +252,25 @@ public class MainActivity extends ActionBarActivity {
         });
 
         sr.startListening(intentRecognizer);
+    }
+
+    private Spanned generateHtml(int verses) {
+        String html = "";
+        for (int i = 0; i < verses; i++) {
+            switch (scores[i]) {
+                case 1:
+                    html = html + "<br><font color=\"#347C17\">"+poem[i]+"</font></br>\n";
+                    break;
+                case -1:
+                    html = html + "<br><font color=\"darkred\">"+poem[i]+"</font></br>\n";
+                    break;
+                case 0:
+                    html = html + "<br><font color=\"gray\">"+poem[i]+"</font></br>\n";
+                    break;
+                default:
+                    break;
+            }
+        }
+        return Html.fromHtml(html);
     }
 }
